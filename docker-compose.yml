@@ -1,0 +1,15 @@
+version: '3.9'
+
+services:
+  db:
+    container_name: mongo
+    image: mongo:6.0
+    restart: always
+    environment:
+      - MONGO_INITDB_DATABASE=117mdr
+      - MONGO_INITDB_ROOT_USERNAME=admin_zurich
+      - MONGO_INITDB_ROOT_PASSWORD=Zur1ch_Adm1n_2023
+    ports:
+      - '27017:27017'
+    volumes:
+      - ./data/db:/data/db

@@ -1,0 +1,15 @@
+
+
+export * from './incidente'
+export * from './respuesta'
+export * from './notaPrivada'
+export * from './contacto'
+export * from './logActividad'
+export * from './tarea'
+export * from './organizacion'
+export * from './poliza'
+export * from './productor'
+export * from './riesgo'
+export * from './siniestro'
+export * from './tipoIncidente'
+export * from './archivo'

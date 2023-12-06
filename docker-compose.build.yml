@@ -1,0 +1,23 @@
+version: '3.9'
+
+services:
+  db:
+    container_name: mongo
+    image: mongo:6.0
+    restart: always
+    ports:
+      - '27017:27017'
+    volumes:
+      - ./data/db:/data/db
+
+  app:
+    container_name: zurich_app_2
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    environment:
+      - MONGODB_URI=mongodb://db:27017/117mdr
+    volumes:
+      - ./assets:/app/assets

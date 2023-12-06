@@ -1,0 +1,30 @@
+export interface IncidenteType {
+  Nro_de_referencia: string
+  Actualizado_por: string
+  Asunto: string
+  Buzon_de_correo: string
+  Cola: string
+  Creado_por_cuenta: string
+  Modo_de_Contacto: string
+  Usuario_Intra: string
+  Tipo_de_Incidente: string
+  Tipo_de_estado: string
+  Tipo_Cobro: string
+  Siniestro: string
+  Poliza: string
+  Nro_Cuenta: string
+  ID_de_producto: string
+  ID_de_incidente: string
+  ID_de_disposicion: string
+  ID_de_contacto: string
+  ID_de_categoria: string
+  Grupo: string
+  Fecha_Efecto: string
+  Fecha_de_ultima_respuesta: string
+  Fecha_de_ultima_actualizacion: string
+  Fecha_de_creacion: Date
+  Fecha_de_cierre: string
+  Estado: string
+  Cuenta_asignada: string
+  ID_de_organizacion: string
+}

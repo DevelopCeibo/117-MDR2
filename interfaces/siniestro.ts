@@ -1,0 +1,36 @@
+export interface SiniestroType {
+  Apellido_Conductor: string
+  Apellido_y_Nombre: string
+  Calle: string
+  Causa: string
+  Codigo_de_Productor: string
+  Codigo_Postal: string
+  Codigo_Producto: string
+  Comiseria: string
+  Contacto: string
+  Danios_Propios: string
+  Danios_Terceros: string
+  Documento_Conductor: string
+  Estado: string
+  Fecha_de_creacion: Date
+  Fecha_de_siniestro: string
+  Fecha_de_ultima_actualizacion: string
+  Fecha_siniestro: string
+  Hora: string
+  ID: string
+  Lesiones_Terceros: string
+  Localidad: string
+  Nombre_Conductor: string
+  Numero: string
+  Numero_de_Documento: string
+  Numero_de_Siniestro: string
+  Numero_de_Siniestro_Nuevo: string
+  Oficina: string
+  Pais: string
+  Poliza: string
+  Producto: string
+  Productor: string
+  Provincia: string
+  Responsable: string
+  Tomador_Riesgo: string
+}

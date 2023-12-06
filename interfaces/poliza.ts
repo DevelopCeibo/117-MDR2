@@ -1,0 +1,34 @@
+export interface PolizaType {
+  Acreedor_Prendario_Hipotecario: string
+  Actualizado_por: string
+  Bolso_Compra: string
+  Canal_de_cobro: string
+  Codigo_Productor: string
+  Compania: string
+  Condicion_de_IVA: string
+  Contacto: string
+  Creado_por: string
+  E_Cupones: string
+  E_Poliza: string
+  Estado: string
+  Fecha_de_creacion: Date
+  Fecha_de_Emision: string
+  Fecha_de_ultima_actualizacion: string
+  Fecha_Siniestro: string
+  Grupo_de_afinidad: string
+  Grupo_Organizador: string
+  ID: string
+  Numero_de_cuenta: string
+  Numero_de_Cuenta_Enmascarado: string
+  Organizador: string
+  Poliza: string
+  Producto: string
+  Productor: string
+  SubRamo: string
+  Sucursal: string
+  Tipo_de_cuenta: string
+  Tomador_Riesgo: string
+  Vendedor: string
+  Vigencia_Desde: string
+  Vigencia_Hasta: string
+}
