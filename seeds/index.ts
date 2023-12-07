@@ -12,6 +12,12 @@ import {
   LogActividad,
   Archivo,
   Respuesta,
+  Poliza,
+  IPoliza,
+  IRiesgo,
+  Riesgo,
+  Productor,
+  IProductor,
 } from '../models'
 
 async function seeds() {
@@ -127,25 +133,25 @@ async function relacionesContacto() {
   for (let i = 0; i < cantidadDeContatos; i++) {
     let haCombiado = 0
     const contacto: IContacto[] = await Contacto.find().skip(i).limit(1)
-    let elContacto = contacto[0]
+    let laPoliza = contacto[0]
 
-    const incidentesDelContacto: IIncidente[] = await Incidente.find({
-      ID_de_contacto: elContacto.ID_de_contacto,
+    const riesgosDeLaPoliza: IIncidente[] = await Incidente.find({
+      ID_de_contacto: laPoliza.ID_de_contacto,
     })
 
-    if (incidentesDelContacto.length) {
-      for (const j in incidentesDelContacto) {
-        const idIncidente = incidentesDelContacto[j]._id
-        if (!elContacto.Incidentes.includes(idIncidente)) {
+    if (riesgosDeLaPoliza.length) {
+      for (const j in riesgosDeLaPoliza) {
+        const idIncidente = riesgosDeLaPoliza[j]._id
+        if (!laPoliza.Incidentes.includes(idIncidente)) {
           console.log(
-            `Se inserta el Incidente ${idIncidente} en el contacto ${elContacto.ID_de_contacto}`
+            `Se inserta el Incidente ${idIncidente} en el contacto ${laPoliza.ID_de_contacto}`
           )
-          elContacto.Incidentes.push(idIncidente)
+          laPoliza.Incidentes.push(idIncidente)
           haCombiado = 1
         }
       }
       if (haCombiado) {
-        await Contacto.findOneAndUpdate({ _id: elContacto._id }, elContacto)
+        await Contacto.findOneAndUpdate({ _id: laPoliza._id }, laPoliza)
       }
     }
   }
@@ -244,11 +250,51 @@ async function relacionesIncidente() {
   }
 }
 
+async function relacionesPoliza() {
+  console.log('Iniciando relaciones de Polizas')
+
+  const cantidadDePolizas = await Poliza.countDocuments()
+
+  for (let i = 0; i < cantidadDePolizas; i++) {
+    let haCombiado = 0
+    const poliza: IPoliza[] = await Poliza.find().skip(i).limit(1)
+    let laPoliza = poliza[0]
+
+    const riesgoDeLaPoliza: IRiesgo | null = await Riesgo.findOne({
+      Poliza: laPoliza.ID,
+    })
+
+    if (riesgoDeLaPoliza && riesgoDeLaPoliza._id !== laPoliza.Riesgo) {
+      laPoliza.Riesgo = riesgoDeLaPoliza._id
+      haCombiado = 1
+    }
+
+    const productorDeLaPoliza: IProductor | null = await Productor.findOne({
+      Nombre: laPoliza.Productor,
+    })
+
+    if (
+      productorDeLaPoliza &&
+      laPoliza.Poliza_Productor &&
+      productorDeLaPoliza._id !== laPoliza.Poliza_Productor._id
+    ) {
+      laPoliza.Poliza_Productor = productorDeLaPoliza._id
+      haCombiado = 1
+    }
+
+    if (haCombiado) {
+      await Poliza.findOneAndUpdate({ _id: laPoliza._id }, laPoliza)
+      console.log('Se ha actualizado la Póliza id:', laPoliza.ID)
+    }
+  }
+}
+
 async function main() {
   await db.connectDB()
   await seeds()
   await relacionesContacto()
   await relacionesIncidente()
+  await relacionesPoliza()
   await db.disconectDB()
 }
 

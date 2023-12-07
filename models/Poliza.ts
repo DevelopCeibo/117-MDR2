@@ -4,6 +4,8 @@ import { PolizaType } from '../interfaces'
 export interface IPoliza extends PolizaType {
   _id: Types.ObjectId
   id: string
+  Riesgo: Types.ObjectId
+  Poliza_Productor: Types.ObjectId
 }
 
 // 1. Definición del Schema
@@ -105,6 +107,14 @@ const polizaSchema: Schema = new Schema({
   },
   Vigencia_Hasta: {
     type: String,
+  },
+  Riesgo: {
+    type: Types.ObjectId,
+    ref: 'Riesgo',
+  },
+  Poliza_Productor: {
+    type: Types.ObjectId,
+    ref: 'Riesgo',
   },
 })
 

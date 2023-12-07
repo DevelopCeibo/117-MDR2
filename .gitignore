@@ -38,3 +38,6 @@ next-env.d.ts
 
 # database
 data/
+
+# informacion
+assets/

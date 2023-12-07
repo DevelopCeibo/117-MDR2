@@ -105,7 +105,6 @@ const incidenteSchema = new Schema({
   Contacto: {
     type: Types.ObjectId,
     ref: 'Contacto',
-    default: null,
   },
   Notas_Privadas: [
     {
