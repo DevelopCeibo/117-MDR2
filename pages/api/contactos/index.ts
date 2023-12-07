@@ -12,7 +12,7 @@ export default async function handler(
   if (req.method === 'GET') {
     console.log(req.method)
     const contactos = await Contacto.find({
-      _id: '656fae32b4cb064641d9a1a6',
+      _id: '6571c6a5e82c18974558c023',
     }).populate('Incidentes')
     db.disconectDB()
     res.status(200).send(contactos)

@@ -1,14 +1,16 @@
 import mongoose, { Model, Schema, Types } from 'mongoose'
 import { IncidenteType } from '../interfaces'
+import Respuesta from './Respuesta'
 
 export interface IIncidente extends IncidenteType {
   _id: Types.ObjectId
   id: string
-  Contactos: Types.ObjectId[]
+  Contacto: Types.ObjectId
   Notas_Privadas: Types.ObjectId[]
   Tareas: Types.ObjectId[]
   Log_Actividad: Types.ObjectId[]
   Archivos: Types.ObjectId[]
+  Respuestas: Types.ObjectId[]
 }
 
 // 1. Definición del Schema
@@ -101,25 +103,40 @@ const incidenteSchema = new Schema({
     type: String,
   },
   Contacto: {
-    type: [Types.ObjectId],
+    type: Types.ObjectId,
     ref: 'Contacto',
+    default: null,
   },
-  Notas_Privadas: {
-    type: [Types.ObjectId],
-    ref: 'NotaPrivada',
-  },
-  Tareas: {
-    type: [Types.ObjectId],
-    ref: 'Tarea',
-  },
-  Log_Actividad: {
-    type: [Types.ObjectId],
-    ref: 'LogActividad',
-  },
-  Archivos: {
-    type: [Types.ObjectId],
-    ref: 'Archivo',
-  },
+  Notas_Privadas: [
+    {
+      type: Types.ObjectId,
+      ref: 'NotaPrivada',
+    },
+  ],
+  Respuestas: [
+    {
+      type: Types.ObjectId,
+      ref: 'Respuesta',
+    },
+  ],
+  Tareas: [
+    {
+      type: Types.ObjectId,
+      ref: 'Tarea',
+    },
+  ],
+  Log_Actividad: [
+    {
+      type: Types.ObjectId,
+      ref: 'LogActividad',
+    },
+  ],
+  Archivos: [
+    {
+      type: Types.ObjectId,
+      ref: 'Archivo',
+    },
+  ],
 })
 
 // 2. Definición de indices

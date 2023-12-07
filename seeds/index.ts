@@ -2,7 +2,17 @@ import { readdirSync, readFileSync, Dirent } from 'fs'
 import { join, basename } from 'path'
 import { parse } from 'csv-parse/sync'
 import { db } from '../db'
-import { IIncidente, IContacto, Contacto, Incidente } from '../models'
+import {
+  IIncidente,
+  IContacto,
+  Contacto,
+  Incidente,
+  NotaPrivada,
+  Tarea,
+  LogActividad,
+  Archivo,
+  Respuesta,
+} from '../models'
 
 async function seeds() {
   const inicio = new Date()
@@ -115,23 +125,28 @@ async function relacionesContacto() {
   const cantidadDeContatos = await Contacto.countDocuments()
 
   for (let i = 0; i < cantidadDeContatos; i++) {
-    let contacto: IContacto[] = await Contacto.find().skip(i).limit(1)
+    let haCombiado = 0
+    const contacto: IContacto[] = await Contacto.find().skip(i).limit(1)
+    let elContacto = contacto[0]
 
-    const incidentes: IIncidente[] = await Incidente.find({
-      ID_de_contacto: contacto[0].ID_de_contacto,
+    const incidentesDelContacto: IIncidente[] = await Incidente.find({
+      ID_de_contacto: elContacto.ID_de_contacto,
     })
 
-    if (incidentes.length) {
-      for (const j in incidentes) {
-        const idIncidente = incidentes[j]._id
-        if (!contacto[0].Incidentes.includes(idIncidente)) {
+    if (incidentesDelContacto.length) {
+      for (const j in incidentesDelContacto) {
+        const idIncidente = incidentesDelContacto[j]._id
+        if (!elContacto.Incidentes.includes(idIncidente)) {
           console.log(
-            `Se inserta el Incidente ${idIncidente} en el contacto ${contacto[0].ID_de_contacto}`
+            `Se inserta el Incidente ${idIncidente} en el contacto ${elContacto.ID_de_contacto}`
           )
-          contacto[0].Incidentes.push(idIncidente)
+          elContacto.Incidentes.push(idIncidente)
+          haCombiado = 1
         }
       }
-      await Contacto.findOneAndUpdate({ _id: contacto[0]._id }, contacto[0])
+      if (haCombiado) {
+        await Contacto.findOneAndUpdate({ _id: elContacto._id }, elContacto)
+      }
     }
   }
 }
@@ -142,7 +157,90 @@ async function relacionesIncidente() {
   const cantidadDeIncidentes = await Incidente.countDocuments()
 
   for (let i = 0; i < cantidadDeIncidentes; i++) {
-    let incidente: IIncidente[] = await Incidente.find().skip(i).limit(1)
+    let haCambiado = 0
+    const incidente: IIncidente[] = await Incidente.find().skip(i).limit(1)
+    const elIncidente = incidente[0]
+
+    const contactoDelIncidente = await Contacto.findOne({
+      ID_de_contacto: elIncidente.ID_de_contacto,
+    })
+    //console.log('contactoDelIncidente', contactoDelIncidente)
+    if (
+      contactoDelIncidente &&
+      elIncidente.Contacto &&
+      contactoDelIncidente._id !== elIncidente.Contacto._id
+    ) {
+      elIncidente.Contacto = contactoDelIncidente._id
+      haCambiado = 1
+    }
+
+    const notasPrivadasDelIncidente = await NotaPrivada.find({
+      ID_de_incidente: elIncidente.ID_de_incidente,
+    })
+    if (notasPrivadasDelIncidente.length) {
+      for (const j in notasPrivadasDelIncidente) {
+        if (
+          !elIncidente.Notas_Privadas.includes(notasPrivadasDelIncidente[j]._id)
+        ) {
+          elIncidente.Notas_Privadas.push(notasPrivadasDelIncidente[j]._id)
+          haCambiado = 1
+        }
+      }
+    }
+
+    const tareasDelIncidente = await Tarea.find({
+      ID_de_incidente: elIncidente.ID_de_incidente,
+    })
+    if (tareasDelIncidente.length) {
+      for (const j in tareasDelIncidente) {
+        if (!elIncidente.Tareas.includes(tareasDelIncidente[j]._id)) {
+          elIncidente.Tareas.push(tareasDelIncidente[j]._id)
+          haCambiado = 1
+        }
+      }
+    }
+
+    const logActividadDelIncidente = await LogActividad.find({
+      ID_de_incidente: elIncidente.ID_de_incidente,
+    })
+    if (logActividadDelIncidente.length) {
+      for (const j in logActividadDelIncidente) {
+        if (
+          !elIncidente.Log_Actividad.includes(logActividadDelIncidente[j]._id)
+        ) {
+          elIncidente.Log_Actividad.push(logActividadDelIncidente[j]._id)
+          haCambiado = 1
+        }
+      }
+    }
+
+    const archivosDelIncidente = await Archivo.find({
+      Clave_ajena: elIncidente.ID_de_incidente,
+    })
+    if (archivosDelIncidente.length) {
+      for (const j in archivosDelIncidente) {
+        if (!elIncidente.Archivos.includes(archivosDelIncidente[j]._id)) {
+          elIncidente.Archivos.push(archivosDelIncidente[j]._id)
+          haCambiado = 1
+        }
+      }
+    }
+
+    const respuestasDelIncidente = await Respuesta.find({
+      Nro_Incidente: elIncidente.Nro_de_referencia,
+    })
+    if (respuestasDelIncidente.length) {
+      for (const j in respuestasDelIncidente) {
+        if (!elIncidente.Respuestas.includes(respuestasDelIncidente[j]._id)) {
+          elIncidente.Respuestas.push(respuestasDelIncidente[j]._id)
+          haCambiado = 1
+        }
+      }
+    }
+    if (haCambiado) {
+      await Incidente.findOneAndUpdate({ _id: elIncidente._id }, elIncidente)
+      console.log('Se actualizó Incidente: ', elIncidente.ID_de_incidente)
+    }
   }
 }
 
@@ -150,6 +248,7 @@ async function main() {
   await db.connectDB()
   await seeds()
   await relacionesContacto()
+  await relacionesIncidente()
   await db.disconectDB()
 }
 
