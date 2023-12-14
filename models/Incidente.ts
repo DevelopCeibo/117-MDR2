@@ -6,6 +6,7 @@ export interface IIncidente extends IncidenteType {
   _id: Types.ObjectId
   id: string
   Contacto: Types.ObjectId
+  Poliza_Incidente: Types.ObjectId
   Notas_Privadas: Types.ObjectId[]
   Tareas: Types.ObjectId[]
   Log_Actividad: Types.ObjectId[]
@@ -136,12 +137,17 @@ const incidenteSchema = new Schema({
       ref: 'Archivo',
     },
   ],
+  Poliza_Incidente: {
+    type: Types.ObjectId,
+    ref: 'Poliza',
+  },
 })
 
 // 2. Definición de indices
 incidenteSchema.index({ ID_de_incidente: 1 })
 incidenteSchema.index({ Tipo_de_Incidente: 1 })
 incidenteSchema.index({ Fecha_de_creacion: 1 })
+incidenteSchema.index({ ID_de_contacto: 1 })
 
 // 3. Definición del Modelo
 

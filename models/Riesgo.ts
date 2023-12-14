@@ -50,6 +50,7 @@ const riesgoSchema: Schema = new Schema({
 
 // 2. Definición de índices
 riesgoSchema.index({ ID: 1 })
+riesgoSchema.index({ Poliza: 1 })
 
 // 2. Definición del Modelo
 

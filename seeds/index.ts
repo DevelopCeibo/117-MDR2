@@ -128,30 +128,29 @@ function getAllFiles(dirPath: string): string[] {
 async function relacionesContacto() {
   console.log('Iniciando relaciones de contacto')
 
-  const cantidadDeContatos = await Contacto.countDocuments()
+  const cursor = Contacto.find().cursor()
 
-  for (let i = 0; i < cantidadDeContatos; i++) {
+  for (let doc = await cursor.next(); doc != null; doc = await cursor.next()) {
     let haCombiado = 0
-    const contacto: IContacto[] = await Contacto.find().skip(i).limit(1)
-    let laPoliza = contacto[0]
+    let elContacto = doc
 
     const riesgosDeLaPoliza: IIncidente[] = await Incidente.find({
-      ID_de_contacto: laPoliza.ID_de_contacto,
-    })
+      ID_de_contacto: elContacto.ID_de_contacto,
+    }).lean()
 
     if (riesgosDeLaPoliza.length) {
       for (const j in riesgosDeLaPoliza) {
         const idIncidente = riesgosDeLaPoliza[j]._id
-        if (!laPoliza.Incidentes.includes(idIncidente)) {
+        if (!elContacto.Incidentes.includes(idIncidente)) {
           console.log(
-            `Se inserta el Incidente ${idIncidente} en el contacto ${laPoliza.ID_de_contacto}`
+            `Se inserta el Incidente ${idIncidente} en el contacto ${elContacto.ID_de_contacto}`
           )
-          laPoliza.Incidentes.push(idIncidente)
+          elContacto.Incidentes.push(idIncidente)
           haCombiado = 1
         }
       }
       if (haCombiado) {
-        await Contacto.findOneAndUpdate({ _id: laPoliza._id }, laPoliza)
+        await Contacto.findOneAndUpdate({ _id: elContacto._id }, elContacto)
       }
     }
   }
@@ -160,29 +159,39 @@ async function relacionesContacto() {
 async function relacionesIncidente() {
   console.log('Iniciando relaciones de Incidente')
 
-  const cantidadDeIncidentes = await Incidente.countDocuments()
+  const cursor = Incidente.find().cursor()
 
-  for (let i = 0; i < cantidadDeIncidentes; i++) {
+  for (let doc = await cursor.next(); doc != null; doc = await cursor.next()) {
     let haCambiado = 0
-    const incidente: IIncidente[] = await Incidente.find().skip(i).limit(1)
-    const elIncidente = incidente[0]
+
+    const elIncidente = doc
 
     const contactoDelIncidente = await Contacto.findOne({
       ID_de_contacto: elIncidente.ID_de_contacto,
-    })
+    }).lean()
     //console.log('contactoDelIncidente', contactoDelIncidente)
     if (
       contactoDelIncidente &&
-      elIncidente.Contacto &&
-      contactoDelIncidente._id !== elIncidente.Contacto._id
+      contactoDelIncidente._id !== elIncidente?.Contacto?._id
     ) {
       elIncidente.Contacto = contactoDelIncidente._id
       haCambiado = 1
     }
 
+    const polizaDelIncidente = await Poliza.findOne({
+      ID: elIncidente.Poliza,
+    }).lean()
+    if (
+      polizaDelIncidente &&
+      polizaDelIncidente._id !== elIncidente?.Poliza_Incidente
+    ) {
+      elIncidente.Poliza_Incidente = polizaDelIncidente._id
+      haCambiado = 1
+    }
+
     const notasPrivadasDelIncidente = await NotaPrivada.find({
       ID_de_incidente: elIncidente.ID_de_incidente,
-    })
+    }).lean()
     if (notasPrivadasDelIncidente.length) {
       for (const j in notasPrivadasDelIncidente) {
         if (
@@ -196,7 +205,7 @@ async function relacionesIncidente() {
 
     const tareasDelIncidente = await Tarea.find({
       ID_de_incidente: elIncidente.ID_de_incidente,
-    })
+    }).lean()
     if (tareasDelIncidente.length) {
       for (const j in tareasDelIncidente) {
         if (!elIncidente.Tareas.includes(tareasDelIncidente[j]._id)) {
@@ -208,7 +217,7 @@ async function relacionesIncidente() {
 
     const logActividadDelIncidente = await LogActividad.find({
       ID_de_incidente: elIncidente.ID_de_incidente,
-    })
+    }).lean()
     if (logActividadDelIncidente.length) {
       for (const j in logActividadDelIncidente) {
         if (
@@ -222,7 +231,7 @@ async function relacionesIncidente() {
 
     const archivosDelIncidente = await Archivo.find({
       Clave_ajena: elIncidente.ID_de_incidente,
-    })
+    }).lean()
     if (archivosDelIncidente.length) {
       for (const j in archivosDelIncidente) {
         if (!elIncidente.Archivos.includes(archivosDelIncidente[j]._id)) {
@@ -234,7 +243,7 @@ async function relacionesIncidente() {
 
     const respuestasDelIncidente = await Respuesta.find({
       Nro_Incidente: elIncidente.Nro_de_referencia,
-    })
+    }).lean()
     if (respuestasDelIncidente.length) {
       for (const j in respuestasDelIncidente) {
         if (!elIncidente.Respuestas.includes(respuestasDelIncidente[j]._id)) {
@@ -253,16 +262,15 @@ async function relacionesIncidente() {
 async function relacionesPoliza() {
   console.log('Iniciando relaciones de Polizas')
 
-  const cantidadDePolizas = await Poliza.countDocuments()
+  const cursor = Poliza.find().cursor()
 
-  for (let i = 0; i < cantidadDePolizas; i++) {
+  for (let doc = await cursor.next(); doc != null; doc = await cursor.next()) {
     let haCombiado = 0
-    const poliza: IPoliza[] = await Poliza.find().skip(i).limit(1)
-    let laPoliza = poliza[0]
+    let laPoliza = doc
 
     const riesgoDeLaPoliza: IRiesgo | null = await Riesgo.findOne({
       Poliza: laPoliza.ID,
-    })
+    }).lean()
 
     if (riesgoDeLaPoliza && riesgoDeLaPoliza._id !== laPoliza.Riesgo) {
       laPoliza.Riesgo = riesgoDeLaPoliza._id
@@ -271,7 +279,7 @@ async function relacionesPoliza() {
 
     const productorDeLaPoliza: IProductor | null = await Productor.findOne({
       Nombre: laPoliza.Productor,
-    })
+    }).lean()
 
     if (
       productorDeLaPoliza &&

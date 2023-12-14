@@ -11,9 +11,9 @@ export default async function handler(
   await db.connectDB()
   if (req.method === 'GET') {
     console.log(req.method)
-    const contactos = await Contacto.find({
-      _id: '6571c6a5e82c18974558c023',
-    }).populate('Incidentes')
+    const contactos = await Contacto.find({ Incidentes: { $ne: [] } })
+      .limit(2)
+      .populate('Incidentes')
     db.disconectDB()
     res.status(200).send(contactos)
   }

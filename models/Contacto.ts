@@ -153,6 +153,7 @@ contactoSchema.index({ Apellido: 1 })
 contactoSchema.index({ DNI: 1 })
 contactoSchema.index({ Direccion_de_correo_electronico: 1 })
 contactoSchema.index({ ID_en_AIS: 1 })
+contactoSchema.index({ ID_de_contacto: 1 })
 
 // 3. Definición del Modelo
 

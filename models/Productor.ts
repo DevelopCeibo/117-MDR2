@@ -43,6 +43,7 @@ const productorSchema: Schema = new Schema({
 
 //2. Definición de índices
 productorSchema.index({ ID: 1 })
+productorSchema.index({ Nombre: 1 })
 
 // 3. Definición del Modelo
 
