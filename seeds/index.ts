@@ -21,9 +21,6 @@ import {
 } from '../models'
 
 async function seeds() {
-  const inicio = new Date()
-  console.log('Hora de inicio', inicio)
-
   const files = await getAllFiles('./assets').filter(
     (file) =>
       basename(file).startsWith('MIGRA_') && basename(file).endsWith('.csv')
@@ -91,13 +88,10 @@ async function seeds() {
     )
   }
   Promise.all(insertPromise)
-    .then(async () => {
+    .then(() => {
       console.log(
         'Todos los datos fueron almacenados en la base de datos exitosamente'
       )
-      // Ahora podemos cerrar la conexión a la base de datos
-      const fin = new Date()
-      console.log('Hora de inicio', fin)
     })
     .catch((error: any) => {
       console.log('Un error a sucedido', error.message)
@@ -127,183 +121,225 @@ function getAllFiles(dirPath: string): string[] {
 
 async function relacionesContacto() {
   console.log('Iniciando relaciones de contacto')
+  let contador = 0
+  let cantidadDeContactos = await Contacto.countDocuments()
 
-  const cursor = Contacto.find().cursor()
+  const cursor = Contacto.find().cursor({
+    batchSize: 100,
+    noCursorTimeout: true,
+  })
 
-  for (let doc = await cursor.next(); doc != null; doc = await cursor.next()) {
+  for await (const contacto of cursor) {
     let haCombiado = 0
-    let elContacto = doc
 
-    const riesgosDeLaPoliza: IIncidente[] = await Incidente.find({
-      ID_de_contacto: elContacto.ID_de_contacto,
-    }).lean()
+    const cursorIncidentes = Incidente.find({
+      ID_de_contacto: contacto.ID_de_contacto,
+    }).cursor({
+      batchSize: 100,
+      noCursorTimeout: true,
+    })
 
-    if (riesgosDeLaPoliza.length) {
-      for (const j in riesgosDeLaPoliza) {
-        const idIncidente = riesgosDeLaPoliza[j]._id
-        if (!elContacto.Incidentes.includes(idIncidente)) {
-          console.log(
-            `Se inserta el Incidente ${idIncidente} en el contacto ${elContacto.ID_de_contacto}`
-          )
-          elContacto.Incidentes.push(idIncidente)
-          haCombiado = 1
-        }
-      }
-      if (haCombiado) {
-        await Contacto.findOneAndUpdate({ _id: elContacto._id }, elContacto)
+    for await (const incidente of cursorIncidentes) {
+      const idIncidente = incidente._id
+      if (!contacto.Incidentes.includes(idIncidente)) {
+        contacto.Incidentes.push(idIncidente)
+        haCombiado = 1
       }
     }
+
+    if (haCombiado) {
+      await contacto.save()
+    }
+
+    await cursorIncidentes.close()
+
+    contador++
+    if (contador % 1000 === 0) {
+      console.log(
+        `Procesado ${contador} contactos de ${cantidadDeContactos} contactos`
+      )
+    }
   }
+  await cursor.close()
 }
 
 async function relacionesIncidente() {
   console.log('Iniciando relaciones de Incidente')
+  let contador = 0
+  let cantidadDeIncidentes = await Incidente.countDocuments()
 
-  const cursor = Incidente.find().cursor()
+  const cursor = Incidente.find().cursor({
+    batchSize: 100,
+    noCursorTimeout: true,
+  })
 
-  for (let doc = await cursor.next(); doc != null; doc = await cursor.next()) {
+  for await (const incidente of cursor) {
     let haCambiado = 0
 
-    const elIncidente = doc
-
     const contactoDelIncidente = await Contacto.findOne({
-      ID_de_contacto: elIncidente.ID_de_contacto,
+      ID_de_contacto: incidente.ID_de_contacto,
     }).lean()
-    //console.log('contactoDelIncidente', contactoDelIncidente)
     if (
       contactoDelIncidente &&
-      contactoDelIncidente._id !== elIncidente?.Contacto?._id
+      contactoDelIncidente._id !== incidente?.Contacto?._id
     ) {
-      elIncidente.Contacto = contactoDelIncidente._id
+      incidente.Contacto = contactoDelIncidente._id
       haCambiado = 1
     }
 
     const polizaDelIncidente = await Poliza.findOne({
-      ID: elIncidente.Poliza,
+      ID: incidente.Poliza,
     }).lean()
     if (
       polizaDelIncidente &&
-      polizaDelIncidente._id !== elIncidente?.Poliza_Incidente
+      polizaDelIncidente._id !== incidente?.Poliza_Incidente
     ) {
-      elIncidente.Poliza_Incidente = polizaDelIncidente._id
+      incidente.Poliza_Incidente = polizaDelIncidente._id
       haCambiado = 1
     }
 
     const notasPrivadasDelIncidente = await NotaPrivada.find({
-      ID_de_incidente: elIncidente.ID_de_incidente,
+      ID_de_incidente: incidente.ID_de_incidente,
     }).lean()
+
     if (notasPrivadasDelIncidente.length) {
       for (const j in notasPrivadasDelIncidente) {
         if (
-          !elIncidente.Notas_Privadas.includes(notasPrivadasDelIncidente[j]._id)
+          !incidente.Notas_Privadas.includes(notasPrivadasDelIncidente[j]._id)
         ) {
-          elIncidente.Notas_Privadas.push(notasPrivadasDelIncidente[j]._id)
+          incidente.Notas_Privadas.push(notasPrivadasDelIncidente[j]._id)
           haCambiado = 1
         }
       }
     }
 
     const tareasDelIncidente = await Tarea.find({
-      ID_de_incidente: elIncidente.ID_de_incidente,
+      ID_de_incidente: incidente.ID_de_incidente,
     }).lean()
     if (tareasDelIncidente.length) {
       for (const j in tareasDelIncidente) {
-        if (!elIncidente.Tareas.includes(tareasDelIncidente[j]._id)) {
-          elIncidente.Tareas.push(tareasDelIncidente[j]._id)
+        if (!incidente.Tareas.includes(tareasDelIncidente[j]._id)) {
+          incidente.Tareas.push(tareasDelIncidente[j]._id)
           haCambiado = 1
         }
       }
     }
 
     const logActividadDelIncidente = await LogActividad.find({
-      ID_de_incidente: elIncidente.ID_de_incidente,
+      ID_de_incidente: incidente.ID_de_incidente,
     }).lean()
     if (logActividadDelIncidente.length) {
       for (const j in logActividadDelIncidente) {
         if (
-          !elIncidente.Log_Actividad.includes(logActividadDelIncidente[j]._id)
+          !incidente.Log_Actividad.includes(logActividadDelIncidente[j]._id)
         ) {
-          elIncidente.Log_Actividad.push(logActividadDelIncidente[j]._id)
+          incidente.Log_Actividad.push(logActividadDelIncidente[j]._id)
           haCambiado = 1
         }
       }
     }
 
     const archivosDelIncidente = await Archivo.find({
-      Clave_ajena: elIncidente.ID_de_incidente,
+      Clave_ajena: incidente.ID_de_incidente,
     }).lean()
     if (archivosDelIncidente.length) {
       for (const j in archivosDelIncidente) {
-        if (!elIncidente.Archivos.includes(archivosDelIncidente[j]._id)) {
-          elIncidente.Archivos.push(archivosDelIncidente[j]._id)
+        if (!incidente.Archivos.includes(archivosDelIncidente[j]._id)) {
+          incidente.Archivos.push(archivosDelIncidente[j]._id)
           haCambiado = 1
         }
       }
     }
 
     const respuestasDelIncidente = await Respuesta.find({
-      Nro_Incidente: elIncidente.Nro_de_referencia,
+      Nro_Incidente: incidente.Nro_de_referencia,
     }).lean()
     if (respuestasDelIncidente.length) {
       for (const j in respuestasDelIncidente) {
-        if (!elIncidente.Respuestas.includes(respuestasDelIncidente[j]._id)) {
-          elIncidente.Respuestas.push(respuestasDelIncidente[j]._id)
+        if (!incidente.Respuestas.includes(respuestasDelIncidente[j]._id)) {
+          incidente.Respuestas.push(respuestasDelIncidente[j]._id)
           haCambiado = 1
         }
       }
     }
+
     if (haCambiado) {
-      await Incidente.findOneAndUpdate({ _id: elIncidente._id }, elIncidente)
-      console.log('Se actualizó Incidente: ', elIncidente.ID_de_incidente)
+      await incidente.save()
+    }
+
+    contador++
+    if (contador % 1000 === 0) {
+      console.log(
+        `Procesado ${contador} incidentes de ${cantidadDeIncidentes} incidentes`
+      )
     }
   }
+
+  await cursor.close()
 }
 
 async function relacionesPoliza() {
   console.log('Iniciando relaciones de Polizas')
+  let contador = 0
+  const cantidadDePolizas = await Poliza.countDocuments()
 
-  const cursor = Poliza.find().cursor()
+  const cursor = Poliza.find().cursor({
+    batchSize: 100,
+    noCursorTimeout: true,
+  })
 
-  for (let doc = await cursor.next(); doc != null; doc = await cursor.next()) {
+  for await (const poliza of cursor) {
     let haCombiado = 0
-    let laPoliza = doc
 
     const riesgoDeLaPoliza: IRiesgo | null = await Riesgo.findOne({
-      Poliza: laPoliza.ID,
+      Poliza: poliza.ID,
     }).lean()
 
-    if (riesgoDeLaPoliza && riesgoDeLaPoliza._id !== laPoliza.Riesgo) {
-      laPoliza.Riesgo = riesgoDeLaPoliza._id
+    if (riesgoDeLaPoliza && riesgoDeLaPoliza._id !== poliza.Riesgo) {
+      poliza.Riesgo = riesgoDeLaPoliza._id
       haCombiado = 1
     }
 
     const productorDeLaPoliza: IProductor | null = await Productor.findOne({
-      Nombre: laPoliza.Productor,
+      Nombre: poliza.Productor,
     }).lean()
 
     if (
       productorDeLaPoliza &&
-      laPoliza.Poliza_Productor &&
-      productorDeLaPoliza._id !== laPoliza.Poliza_Productor._id
+      poliza.Poliza_Productor &&
+      productorDeLaPoliza._id !== poliza.Poliza_Productor._id
     ) {
-      laPoliza.Poliza_Productor = productorDeLaPoliza._id
+      poliza.Poliza_Productor = productorDeLaPoliza._id
       haCombiado = 1
     }
 
     if (haCombiado) {
-      await Poliza.findOneAndUpdate({ _id: laPoliza._id }, laPoliza)
-      console.log('Se ha actualizado la Póliza id:', laPoliza.ID)
+      await poliza.save()
+    }
+
+    contador++
+    if (contador % 1000 === 0) {
+      console.log(
+        `Procesado ${contador} polizas de ${cantidadDePolizas} polizas`
+      )
     }
   }
+  await cursor.close()
 }
 
 async function main() {
+  const inicio = new Date()
+  console.log('Hora de inicio', inicio)
+
   await db.connectDB()
   await seeds()
   await relacionesContacto()
   await relacionesIncidente()
   await relacionesPoliza()
   await db.disconectDB()
+
+  const fin = new Date()
+  console.log('Hora de fin', fin)
 }
 
 main()

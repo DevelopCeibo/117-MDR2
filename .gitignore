@@ -38,6 +38,10 @@ next-env.d.ts
 
 # database
 data/
+data_test/
 
 # informacion
 /assets/*
+/assets_test
+/assets_sample
+/assets*
